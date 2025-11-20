@@ -1,0 +1,8 @@
+{
+  "name": "Sparks - Creative Video Journal",
+  "description": "An AI-powered video journal companion that interviews you based on your chosen vibe.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
