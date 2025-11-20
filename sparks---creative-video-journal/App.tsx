@@ -11,6 +11,7 @@ const App: React.FC = () => {
   const [selectedVibe, setSelectedVibe] = useState<Vibe | null>(null);
   const [aiText, setAiText] = useState<string>("");
   const [userText, setUserText] = useState<string>("");
+  const [currentQuestion, setCurrentQuestion] = useState<string>("");
   const [isAiSpeaking, setIsAiSpeaking] = useState(false);
   const [isMicOn, setIsMicOn] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -18,6 +19,12 @@ const App: React.FC = () => {
   // Refs
   const videoRef = useRef<HTMLVideoElement>(null);
   const geminiService = useRef<GeminiLiveService | null>(null);
+
+  const extractLatestQuestion = useCallback((text: string) => {
+    const matches = text.match(/[^?？!！。\.]*[?？]/g);
+    if (!matches || matches.length === 0) return "";
+    return matches[matches.length - 1].trim();
+  }, []);
 
   // Initialize Camera
   useEffect(() => {
@@ -61,22 +68,15 @@ const App: React.FC = () => {
         },
         onTranscription: (text, isModel, isFinal) => {
           if (isModel) {
-            setAiText(prev => {
-                // Simple logic to reset if it's a new turn
-                if (isFinal) return prev; // Keep showing full text
-                return prev.length > 100 ? text : prev + text; 
-            });
-            // If receiving chunks, replace text for smoother display if implementation sends partials
-             // Actually for Gemini Live, often sends accumulated chunks or new parts.
-             // Let's assume for this demo we overwrite or append based on context.
-             // The service implementation logic passed accumulated text or chunks.
-             // Let's simplify: Just show the latest large chunk or accumulating buffer.
-             setAiText(text);
-             setIsAiSpeaking(true);
-             
-             if (isFinal) {
-                setTimeout(() => setIsAiSpeaking(false), 1000);
-             }
+            if (text) {
+              setAiText(text);
+              const question = extractLatestQuestion(text);
+              if (question) {
+                setCurrentQuestion(question);
+              }
+            }
+
+            setIsAiSpeaking(!isFinal);
           } else {
             setUserText(text);
             setIsAiSpeaking(false);
@@ -116,6 +116,7 @@ const App: React.FC = () => {
     setSelectedVibe(null);
     setAiText("");
     setUserText("");
+    setCurrentQuestion("");
   }, []);
 
   return (
@@ -174,11 +175,12 @@ const App: React.FC = () => {
         {/* State: Active Session Overlay */}
         {isActive && selectedVibe && (
           <LiveOverlay 
-            aiText={aiText} 
-            userText={userText} 
-            isListening={!isAiSpeaking} 
+            aiText={aiText}
+            userText={userText}
+            isListening={!isAiSpeaking}
             isAiSpeaking={isAiSpeaking}
             vibeLabel={VIBE_CONFIGS[selectedVibe].label}
+            question={currentQuestion}
           />
         )}
       </main>
@@ -187,11 +189,15 @@ const App: React.FC = () => {
       {isActive && (
         <div className="absolute bottom-8 left-0 right-0 z-30 flex items-center justify-center gap-6 animate-in slide-in-from-bottom-4">
           
-          <button 
-            onClick={() => setIsMicOn(!isMicOn)}
+          <button
+            onClick={() => {
+              const next = !isMicOn;
+              setIsMicOn(next);
+              geminiService.current?.setMicEnabled(next);
+            }}
             className={`p-4 rounded-full backdrop-blur-md border transition-all duration-200 ${
-              isMicOn 
-                ? 'bg-white/10 border-white/20 text-white hover:bg-white/20' 
+              isMicOn
+                ? 'bg-white/10 border-white/20 text-white hover:bg-white/20'
                 : 'bg-red-500/20 border-red-500/50 text-red-200'
             }`}
           >

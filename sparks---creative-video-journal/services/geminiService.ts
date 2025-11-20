@@ -19,6 +19,8 @@ export class GeminiLiveService {
   private processor: ScriptProcessorNode | null = null;
   private source: MediaStreamAudioSourceNode | null = null;
   private videoInterval: number | null = null;
+  private micEnabled = true;
+  private lastModelText = "";
   
   // Playback state
   private nextStartTime = 0;
@@ -41,6 +43,8 @@ export class GeminiLiveService {
       const vibeConfig = VIBE_CONFIGS[config.vibe];
 
       // Connect to Gemini Live
+      const baseInstruction = `You are "Sparks", an AI video journal companion and language coach. You should keep the conversation flowing with thoughtful follow-up questions, using Chinese by default unless the user asks for another language. Refer to what you see on camera and what the user just said. Stay concise (1-3 sentences), warm, and never lecture.`;
+
       this.sessionPromise = this.ai.live.connect({
         model: 'gemini-2.5-flash-native-audio-preview-09-2025',
         callbacks: {
@@ -64,15 +68,17 @@ export class GeminiLiveService {
             }
 
             if (message.serverContent?.outputTranscription?.text) {
-                config.onTranscription(message.serverContent.outputTranscription.text, true, false);
+                this.lastModelText = message.serverContent.outputTranscription.text;
+                config.onTranscription(this.lastModelText, true, false);
             }
-            
+
             if (message.serverContent?.inputTranscription?.text) {
                 config.onTranscription(message.serverContent.inputTranscription.text, false, false);
             }
 
             if (message.serverContent?.turnComplete) {
-                config.onTranscription("", true, true); // Mark turn complete
+                config.onTranscription(this.lastModelText, true, true); // Mark turn complete with final text
+                this.lastModelText = "";
             }
             
             // Handle interruption
@@ -94,7 +100,7 @@ export class GeminiLiveService {
           speechConfig: {
             voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } } 
           },
-          systemInstruction: `You are "Sparks", an AI video journal companion. ${vibeConfig.systemInstruction} Keep your responses concise, encouraging, and conversational. Do not monologue. Treat this as a real-time video call.`,
+          systemInstruction: `${baseInstruction} ${vibeConfig.systemInstruction} Always include a clear, open-ended question each turn so the user sees it on screen and wants to reply.`,
           inputAudioTranscription: { model: "google-speech-v2" },
           outputAudioTranscription: { },
         }
@@ -114,6 +120,8 @@ export class GeminiLiveService {
     this.processor = this.inputAudioContext.createScriptProcessor(4096, 1, 1);
 
     this.processor.onaudioprocess = (e) => {
+      if (!this.micEnabled) return;
+
       const inputData = e.inputBuffer.getChannelData(0);
       // Send to Gemini
       const pcmBlob = createPcmBlob(inputData);
@@ -124,6 +132,15 @@ export class GeminiLiveService {
 
     this.source.connect(this.processor);
     this.processor.connect(this.inputAudioContext.destination);
+  }
+
+  setMicEnabled(enabled: boolean) {
+    this.micEnabled = enabled;
+    if (this.mediaStream) {
+      this.mediaStream.getAudioTracks().forEach(track => {
+        track.enabled = enabled;
+      });
+    }
   }
 
   // Video Streaming helper
