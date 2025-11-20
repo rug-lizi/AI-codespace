@@ -20,6 +20,7 @@ export class GeminiLiveService {
   private source: MediaStreamAudioSourceNode | null = null;
   private videoInterval: number | null = null;
   private micEnabled = true;
+  private lastModelText = "";
   
   // Playback state
   private nextStartTime = 0;
@@ -67,15 +68,17 @@ export class GeminiLiveService {
             }
 
             if (message.serverContent?.outputTranscription?.text) {
-                config.onTranscription(message.serverContent.outputTranscription.text, true, false);
+                this.lastModelText = message.serverContent.outputTranscription.text;
+                config.onTranscription(this.lastModelText, true, false);
             }
-            
+
             if (message.serverContent?.inputTranscription?.text) {
                 config.onTranscription(message.serverContent.inputTranscription.text, false, false);
             }
 
             if (message.serverContent?.turnComplete) {
-                config.onTranscription("", true, true); // Mark turn complete
+                config.onTranscription(this.lastModelText, true, true); // Mark turn complete with final text
+                this.lastModelText = "";
             }
             
             // Handle interruption

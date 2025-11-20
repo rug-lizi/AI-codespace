@@ -68,26 +68,15 @@ const App: React.FC = () => {
         },
         onTranscription: (text, isModel, isFinal) => {
           if (isModel) {
-            setAiText(prev => {
-                // Simple logic to reset if it's a new turn
-                if (isFinal) return prev; // Keep showing full text
-                return prev.length > 100 ? text : prev + text; 
-            });
-            // If receiving chunks, replace text for smoother display if implementation sends partials
-             // Actually for Gemini Live, often sends accumulated chunks or new parts.
-             // Let's assume for this demo we overwrite or append based on context.
-            // The service implementation logic passed accumulated text or chunks.
-             // Let's simplify: Just show the latest large chunk or accumulating buffer.
-             setAiText(text);
-             const question = extractLatestQuestion(text);
-             if (question) {
+            if (text) {
+              setAiText(text);
+              const question = extractLatestQuestion(text);
+              if (question) {
                 setCurrentQuestion(question);
-             }
-             setIsAiSpeaking(true);
+              }
+            }
 
-             if (isFinal) {
-                setTimeout(() => setIsAiSpeaking(false), 1000);
-             }
+            setIsAiSpeaking(!isFinal);
           } else {
             setUserText(text);
             setIsAiSpeaking(false);
