@@ -6,9 +6,10 @@ interface LiveOverlayProps {
   isListening: boolean;
   isAiSpeaking: boolean;
   vibeLabel: string;
+  question?: string;
 }
 
-export const LiveOverlay: React.FC<LiveOverlayProps> = ({ aiText, userText, isListening, isAiSpeaking, vibeLabel }) => {
+export const LiveOverlay: React.FC<LiveOverlayProps> = ({ aiText, userText, isListening, isAiSpeaking, vibeLabel, question }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   return (
@@ -29,13 +30,22 @@ export const LiveOverlay: React.FC<LiveOverlayProps> = ({ aiText, userText, isLi
 
         {/* Content Area */}
         <div className="mt-8 flex flex-col gap-6 text-center min-h-[120px] justify-center">
-            
+
             {/* AI Text */}
             <div className={`transition-opacity duration-500 ${aiText ? 'opacity-100' : 'opacity-0'}`}>
                <p className="text-2xl md:text-3xl font-serif leading-relaxed text-white drop-shadow-md">
                  "{aiText || "Listening..."}"
                </p>
             </div>
+
+            {question && (
+              <div className="flex flex-col items-center gap-2">
+                <p className="text-xs uppercase tracking-[0.3em] text-white/60 font-semibold">Coach question</p>
+                <div className="bg-black/30 border border-white/20 rounded-2xl px-4 py-3 text-white text-lg max-w-xl w-full">
+                  {question}
+                </div>
+              </div>
+            )}
 
             {/* User Transcript (Subtitle style) */}
             {userText && (

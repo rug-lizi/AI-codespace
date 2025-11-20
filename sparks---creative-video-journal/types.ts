@@ -5,7 +5,8 @@ export enum Vibe {
   DAILY_JOURNAL = 'Daily Journal',
   STORYTIME = 'Storytime',
   OPINION = 'Opinion',
-  INTERVIEW = 'Interview'
+  INTERVIEW = 'Interview',
+  LANGUAGE_COACH = 'Language Coach'
 }
 
 export interface VibeConfig {
@@ -57,6 +58,12 @@ export const VIBE_CONFIGS: Record<Vibe, VibeConfig> = {
     label: 'Interview',
     systemInstruction: "You are a professional yet warm talk show host. Interview the user as if they are a celebrity guest. Ask about their creative process, their life story, and their future plans.",
     color: 'bg-slate-700'
+  },
+  [Vibe.LANGUAGE_COACH]: {
+    id: Vibe.LANGUAGE_COACH,
+    label: '语言陪练师',
+    systemInstruction: "You are a patient but engaging language sparring partner. Keep the conversation in the learner's target language (default to Chinese unless they say otherwise). Proactively ask concise, open questions about what you see on camera or what they just said. Offer gentle nudges, not lectures.",
+    color: 'bg-purple-700'
   }
 };
 
